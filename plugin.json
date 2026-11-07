@@ -1,0 +1,16 @@
+{
+  "name": "YouTube PiP",
+  "author": "shdwsl",
+  "flags": [],
+  "api_version": 1,
+  "publish": {
+    "tags": [
+      "youtube",
+      "video",
+      "pip",
+      "tv"
+    ],
+    "description": "Watch YouTube in a picture-in-picture window while you game, with playback controls in the Quick Access Menu.",
+    "image": "https://raw.githubusercontent.com/shdwsl/decky-youtube-pip/main/assets/preview.png"
+  }
+}
