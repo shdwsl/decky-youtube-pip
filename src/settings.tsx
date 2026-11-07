@@ -110,6 +110,16 @@ export const Settings = () => {
     return <>
         <PanelSection title="Playback">
             <PanelSectionRow>
+                <ButtonItem
+                    layout="below"
+                    onClick={() => setGlobalState(state => ({
+                        ...state,
+                        viewMode: ViewMode.Closed
+                    }))}>
+                    Close
+                </ButtonItem>
+            </PanelSectionRow>
+            <PanelSectionRow>
                 <NowPlaying status={status} />
             </PanelSectionRow>
             <PanelSectionRow>
@@ -224,17 +234,6 @@ export const Settings = () => {
                         quality: option.data
                     }))} />
             </PanelSectionRow>
-            <PanelSectionRow>
-                <ButtonItem
-                    bottomSeparator="none"
-                    layout="below"
-                    onClick={() => setGlobalState(state => ({
-                        ...state,
-                        viewMode: ViewMode.Closed
-                    }))}>
-                    Close
-                </ButtonItem>
-            </PanelSectionRow>
         </PanelSection>
         <PanelSection title="Hotkeys">
             <PanelSectionRow>
@@ -266,7 +265,7 @@ export const Settings = () => {
                         bottomSeparator="none"
                         layout="below"
                         onClick={() => setGlobalState(state => ({ ...state, bindings: DEFAULT_BINDINGS }))}>
-                        Reset Hotkeys
+                        Clear All Hotkeys
                     </ButtonItem>
                 </PanelSectionRow>
             </>}

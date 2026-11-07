@@ -2,7 +2,7 @@ import { addEventListener, removeEventListener } from "@decky/api";
 import { StateManager } from "cotton-box";
 
 import { control, press } from "./backend";
-import { Bindings, chordDetector, chordRecorder, NOT_BOUND, pressedButtons } from "./chords";
+import { Bindings, chordDetector, chordRecorder, pressedButtons } from "./chords";
 import { State } from "./globalState";
 import { ViewMode } from "./util";
 
@@ -20,17 +20,7 @@ export const HOTKEY_ACTIONS = [
     { id: 'hide', label: 'Hide Window' },
 ];
 
-// Back grips only: games rarely bind them.
-export const DEFAULT_BINDINGS: Bindings = {
-    toggle: 'L4 + R4',
-    seekBack: 'L5 + L4',
-    seekForward: 'R5 + R4',
-    next: NOT_BOUND,
-    restart: NOT_BOUND,
-    volumeUp: NOT_BOUND,
-    volumeDown: NOT_BOUND,
-    hide: 'L5 + R5',
-};
+export const DEFAULT_BINDINGS: Bindings = {};
 
 type Recorder = ReturnType<typeof chordRecorder>;
 
