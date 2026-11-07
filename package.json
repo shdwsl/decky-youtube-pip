@@ -21,7 +21,7 @@
     "pip"
   ],
   "author": "shdwsl",
-  "license": "BSD-3-Clause",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/shdwsl/decky-youtube-pip/issues"
   },

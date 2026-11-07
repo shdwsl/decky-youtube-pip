@@ -43,4 +43,4 @@ The frontend opens a Steam browser view with a TV user agent. The Python backend
 
 ## License
 
-BSD 3-Clause
+MIT. Portions derived from decky-pip remain under BSD 3-Clause, see [LICENSE](LICENSE).
