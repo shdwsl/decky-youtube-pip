@@ -11,7 +11,7 @@ root="$stage/youtube-pip"
 mkdir -p "$root/dist" out
 
 cp dist/index.js "$root/dist/"
-cp main.py plugin.json package.json LICENSE README.md defaults/agent.js "$root/"
+cp main.py plugin.json package.json LICENSE LICENSE.decky-pip README.md defaults/agent.js "$root/"
 
 rm -f out/youtube-pip.zip
 (cd "$stage" && zip -qr - youtube-pip) > out/youtube-pip.zip
