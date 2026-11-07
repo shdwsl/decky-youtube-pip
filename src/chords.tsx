@@ -56,10 +56,10 @@ export const chordDetector = () => {
     };
 }
 
-// Waits for everything to be released first: the A press that opened the
-// recorder must not end up in the chord. Finishes when all buttons are let go.
-export const chordRecorder = () => {
-    let armed = false;
+// Waits for buttons held at the start to be released: the A press that opened
+// the recorder must not end up in the chord. Finishes when all are let go.
+export const chordRecorder = (held: string[]) => {
+    let armed = held.length == 0;
     const seen = new Set<string>();
 
     return (pressed: string[]) => {

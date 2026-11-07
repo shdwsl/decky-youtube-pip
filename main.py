@@ -1,6 +1,9 @@
 import asyncio
+import glob
 import json
 import os
+import re
+import time
 from typing import Any, Optional
 
 import aiohttp
@@ -26,6 +29,95 @@ KEYS = {
     "next": (176, "MediaTrackNext"),
     "previous": (177, "MediaTrackPrevious"),
 }
+
+
+# Steam stops delivering controller input to the frontend while a game has
+# focus, so buttons are read passively from the Deck's own controller instead.
+# Report layout and button bits follow SDL's SDL_hidapi_steamdeck.c.
+DECK_CONTROLLER_ID = re.compile(r"^HID_ID=[0-9a-f]+:0*28de:0*1205$", re.M | re.I)
+DECK_STATE_REPORT = 0x09
+REPORT_SIZE = 64
+# The buttons listed in src/chords.tsx: no touch sensors, Steam or QAM.
+LOW_BUTTONS = 0x0447DFFF
+HIGH_BUTTONS = 0x00000600
+# Reports stream constantly. Silence means the device went away during sleep.
+BUTTON_STALL_SECONDS = 5
+
+
+def deck_controller_nodes() -> list[str]:
+    nodes = []
+    for device in glob.glob("/sys/class/hidraw/hidraw*"):
+        try:
+            with open(os.path.join(device, "device", "uevent"), encoding="utf-8") as file:
+                if DECK_CONTROLLER_ID.search(file.read()):
+                    nodes.append(os.path.join("/dev", os.path.basename(device)))
+        except OSError:
+            continue
+    return nodes
+
+
+class ButtonWatcher:
+    """Publishes pressed buttons to the frontend. Button states are never logged."""
+
+    def __init__(self):
+        self.fds: list[int] = []
+        self.buttons = (0, 0)
+        self.last_report = 0.0
+        self.opened = -1
+
+    def _publish(self, low: int, high: int):
+        if (low, high) != self.buttons:
+            self.buttons = (low, high)
+            asyncio.get_running_loop().create_task(decky.emit("buttons", low, high))
+
+    def _on_readable(self, fd: int):
+        try:
+            data = os.read(fd, REPORT_SIZE)
+        except BlockingIOError:
+            return
+        except OSError:
+            data = b""
+
+        if not data:
+            self._drop(fd)
+        elif len(data) >= 16 and data[0] == 0x01 and data[2] == DECK_STATE_REPORT:
+            self.last_report = time.monotonic()
+            buttons = int.from_bytes(data[8:16], "little")
+            self._publish(buttons & LOW_BUTTONS, (buttons >> 32) & HIGH_BUTTONS)
+
+    def _drop(self, fd: int):
+        asyncio.get_running_loop().remove_reader(fd)
+        os.close(fd)
+        self.fds.remove(fd)
+
+    def _close(self):
+        for fd in list(self.fds):
+            self._drop(fd)
+        self._publish(0, 0)
+
+    def _open(self):
+        for node in deck_controller_nodes():
+            try:
+                fd = os.open(node, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC)
+            except OSError as error:
+                decky.logger.warning(f"Cannot read {node}: {error!r}")
+                continue
+            self.fds.append(fd)
+            asyncio.get_running_loop().add_reader(fd, self._on_readable, fd)
+
+        if len(self.fds) != self.opened:
+            self.opened = len(self.fds)
+            decky.logger.info(f"Reading buttons from {self.opened} hidraw node(s)")
+
+    async def run(self):
+        try:
+            while True:
+                if time.monotonic() - self.last_report > BUTTON_STALL_SECONDS:
+                    self._close()
+                    self._open()
+                await asyncio.sleep(BUTTON_STALL_SECONDS)
+        finally:
+            self._close()
 
 
 class Cdp:
@@ -81,6 +173,7 @@ class Plugin:
     http: Optional[aiohttp.ClientSession] = None
     cdp: Optional[Cdp] = None
     loop_task: Optional[asyncio.Task[None]] = None
+    buttons_task: Optional[asyncio.Task[None]] = None
     agent = ""
     options: dict[str, Any] = {"fill": True, "quality": "hd720"}
     status: dict[str, Any] = {"connected": False}
@@ -146,11 +239,15 @@ class Plugin:
     async def start(self):
         if not self.loop_task:
             self.loop_task = asyncio.create_task(self._loop())
+            self.buttons_task = asyncio.create_task(ButtonWatcher().run())
 
     async def stop(self):
         if self.loop_task:
             self.loop_task.cancel()
             self.loop_task = None
+        if self.buttons_task:
+            self.buttons_task.cancel()
+            self.buttons_task = None
         if self.cdp:
             await self.cdp.close()
             self.cdp = None

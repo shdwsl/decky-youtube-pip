@@ -1,3 +1,4 @@
+import { addEventListener, removeEventListener } from "@decky/api";
 import { StateManager } from "cotton-box";
 
 import { control, press } from "./backend";
@@ -31,15 +32,13 @@ export const DEFAULT_BINDINGS: Bindings = {
     hide: 'L5 + R5',
 };
 
-interface Recording {
-    recorders: { [controller: number]: ReturnType<typeof chordRecorder> }
-    onDone: (chord: string) => void
-}
+type Recorder = ReturnType<typeof chordRecorder>;
 
-let recording: Recording | null = null;
+let pressed: string[] = [];
+let recording: { recorder: Recorder, onDone: (chord: string) => void } | null = null;
 
 export const recordChord = (onDone: (chord: string) => void) => {
-    const current = { recorders: {}, onDone };
+    const current = { recorder: chordRecorder(pressed), onDone };
     recording = current;
 
     return () => {
@@ -49,18 +48,8 @@ export const recordChord = (onDone: (chord: string) => void) => {
     };
 }
 
-const record = ({ recorders, onDone }: Recording, controller: number, pressed: string[]) => {
-    recorders[controller] ??= chordRecorder();
-    const chord = recorders[controller](pressed);
-
-    if (chord) {
-        recording = null;
-        onDone(chord);
-    }
-}
-
 export const registerHotkeys = (state: StateManager<State>) => {
-    const detectors: { [controller: number]: ReturnType<typeof chordDetector> } = {};
+    const detect = chordDetector();
 
     const actions: { [action: string]: () => void } = {
         toggle: () => control('toggle'),
@@ -76,25 +65,30 @@ export const registerHotkeys = (state: StateManager<State>) => {
         },
     };
 
-    const registration = (window as any).SteamClient?.Input?.RegisterForControllerStateChanges?.((changes: any[]) => {
+    const listener = addEventListener<[low: number, high: number]>("buttons", (low, high) => {
+        pressed = pressedButtons(low, high);
+        const chord = detect(pressed);
+
+        if (recording) {
+            const { recorder, onDone } = recording;
+            const recorded = recorder(pressed);
+
+            if (recorded) {
+                recording = null;
+                onDone(recorded);
+            }
+            return;
+        }
+
         const { bindings, hotkeys, viewMode } = state.get();
 
-        for (const { unControllerIndex, ulButtons, ulUpperButtons } of changes) {
-            const pressed = pressedButtons(ulButtons, ulUpperButtons);
-
-            detectors[unControllerIndex] ??= chordDetector();
-            const chord = detectors[unControllerIndex](pressed);
-
-            if (recording) {
-                record(recording, unControllerIndex, pressed);
-            } else if (chord && hotkeys && viewMode != ViewMode.Closed && viewMode != ViewMode.Remote) {
-                const action = Object.keys(bindings).find(action => bindings[action] == chord);
-                if (action) {
-                    actions[action]?.();
-                }
+        if (chord && hotkeys && viewMode != ViewMode.Remote) {
+            const action = Object.keys(bindings).find(action => bindings[action] == chord);
+            if (action) {
+                actions[action]?.();
             }
         }
     });
 
-    return () => registration?.unregister();
+    return () => removeEventListener("buttons", listener);
 }

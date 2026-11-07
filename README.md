@@ -18,7 +18,7 @@ Watch YouTube in a picture-in-picture window while you game on Steam Deck. A [De
 | R5 + R4        | Forward 10 seconds |
 | L5 + R5        | Hide / show window |
 
-Rebind any of these in the plugin panel: select an action and press your buttons. Next video, restart and volume are available too.
+Rebind any of these in the plugin panel: select an action and press your buttons. Next video, restart and volume are available too. Hotkeys work on the Deck's built-in controls, not on external gamepads.
 
 **Browse YouTube** in the plugin panel turns the gamepad into a remote: D-pad to navigate, A select, B back, X play/pause, Y exit.
 
@@ -37,7 +37,7 @@ The frontend opens a Steam browser view with a TV user agent. The Python backend
 
 ## Notes
 
-- Early version: verified against YouTube in desktop Chromium, not yet on a Steam Deck.
+- Early version.
 - Not affiliated with YouTube or Google. Using the TV app from a non-TV device is unofficial and may stop working.
 - Preview image: Big Buck Bunny, (c) Blender Foundation, CC BY 3.0.
 
