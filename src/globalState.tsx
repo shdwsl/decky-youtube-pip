@@ -1,6 +1,7 @@
 import { StateManager } from 'cotton-box';
 import { useContext, createContext } from 'react';
 
+import { Bindings } from './chords';
 import { Position, ViewMode } from './util';
 import { useStateValue } from 'cotton-box-react';
 
@@ -14,6 +15,7 @@ export interface State {
     size: number
     quality: string
     hotkeys: boolean
+    bindings: Bindings
 }
 
 export const GlobalContext = createContext(new StateManager<State>({} as State));

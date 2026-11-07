@@ -120,6 +120,10 @@
                 p.unMute?.();
                 p.setVolume(value);
                 break;
+            case 'volumeBy':
+                p.unMute?.();
+                p.setVolume(Math.min(100, Math.max(0, p.getVolume() + value)));
+                break;
             default:
                 return false;
         }

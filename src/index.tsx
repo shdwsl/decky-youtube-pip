@@ -6,11 +6,13 @@ import { definePlugin, routerHook, } from "@decky/api";
 import { PipOuter } from "./pip";
 import { Remote } from "./remote";
 import { Settings } from "./settings";
-import { registerHotkeys } from "./hotkeys";
+import { DEFAULT_BINDINGS, registerHotkeys } from "./hotkeys";
 import { Position, REMOTE_ROUTE, ViewMode } from "./util";
 import { State, GlobalContext } from "./globalState";
 
 export default definePlugin(() => {
+    const saved = JSON.parse(localStorage.getItem('youtube-pip') ?? '{}');
+
     const state = new StateManager<State>({
         viewMode: ViewMode.Closed,
         visible: true,
@@ -20,11 +22,12 @@ export default definePlugin(() => {
         size: 0.4,
         quality: 'hd720',
         hotkeys: true,
-        ...JSON.parse(localStorage.getItem('youtube-pip') ?? '{}')
+        ...saved,
+        bindings: { ...DEFAULT_BINDINGS, ...saved.bindings }
     });
 
-    state.watch(({ position, margin, size, quality, hotkeys }) =>
-        localStorage.setItem('youtube-pip', JSON.stringify({ position, margin, size, quality, hotkeys })));
+    state.watch(({ position, margin, size, quality, hotkeys, bindings }) =>
+        localStorage.setItem('youtube-pip', JSON.stringify({ position, margin, size, quality, hotkeys, bindings })));
 
     routerHook.addGlobalComponent("YouTubePiP", () => {
         return <GlobalContext.Provider value={state}>

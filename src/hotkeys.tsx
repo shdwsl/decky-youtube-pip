@@ -1,58 +1,97 @@
 import { StateManager } from "cotton-box";
 
-import { control } from "./backend";
+import { control, press } from "./backend";
+import { Bindings, chordDetector, chordRecorder, NOT_BOUND, pressedButtons } from "./chords";
 import { State } from "./globalState";
 import { ViewMode } from "./util";
 
-// Steam Deck button bits, same layout as SDL's controller_constants.h
-const L5 = 0x00008000;
-const R5 = 0x00010000;
-const L4 = 0x00000200;
-const R4 = 0x00000400;
-
 const SEEK_SECONDS = 10;
+const VOLUME_STEP = 10;
 
-const pressedGrips = (ulButtons: number, ulUpperButtons: number) => ({
-    l4: !!(ulUpperButtons & L4),
-    r4: !!(ulUpperButtons & R4),
-    l5: !!(ulButtons & L5),
-    r5: !!(ulButtons & R5),
-});
+export const HOTKEY_ACTIONS = [
+    { id: 'toggle', label: 'Play / Pause' },
+    { id: 'seekBack', label: 'Back 10s' },
+    { id: 'seekForward', label: 'Forward 10s' },
+    { id: 'next', label: 'Next Video' },
+    { id: 'restart', label: 'Restart Video' },
+    { id: 'volumeUp', label: 'Volume Up' },
+    { id: 'volumeDown', label: 'Volume Down' },
+    { id: 'hide', label: 'Hide Window' },
+];
 
-// Only chords of the back grips are used: games rarely bind them, and these
-// buttons never reach the window itself while a game has input focus.
-export const registerHotkeys = (state: StateManager<State>) => {
-    let held = '';
+// Back grips only: games rarely bind them.
+export const DEFAULT_BINDINGS: Bindings = {
+    toggle: 'L4 + R4',
+    seekBack: 'L5 + L4',
+    seekForward: 'R5 + R4',
+    next: NOT_BOUND,
+    restart: NOT_BOUND,
+    volumeUp: NOT_BOUND,
+    volumeDown: NOT_BOUND,
+    hide: 'L5 + R5',
+};
 
-    const onChord = (chord: string) => {
-        switch (chord) {
-            case 'l4+r4': control('toggle'); break;
-            case 'l4+l5': control('seek', -SEEK_SECONDS); break;
-            case 'r4+r5': control('seek', SEEK_SECONDS); break;
-            case 'l5+r5': {
-                const current = state.get();
-                state.set({ ...current, hidden: !current.hidden });
-            } break;
+interface Recording {
+    recorders: { [controller: number]: ReturnType<typeof chordRecorder> }
+    onDone: (chord: string) => void
+}
+
+let recording: Recording | null = null;
+
+export const recordChord = (onDone: (chord: string) => void) => {
+    const current = { recorders: {}, onDone };
+    recording = current;
+
+    return () => {
+        if (recording == current) {
+            recording = null;
         }
+    };
+}
+
+const record = ({ recorders, onDone }: Recording, controller: number, pressed: string[]) => {
+    recorders[controller] ??= chordRecorder();
+    const chord = recorders[controller](pressed);
+
+    if (chord) {
+        recording = null;
+        onDone(chord);
+    }
+}
+
+export const registerHotkeys = (state: StateManager<State>) => {
+    const detectors: { [controller: number]: ReturnType<typeof chordDetector> } = {};
+
+    const actions: { [action: string]: () => void } = {
+        toggle: () => control('toggle'),
+        seekBack: () => control('seek', -SEEK_SECONDS),
+        seekForward: () => control('seek', SEEK_SECONDS),
+        next: () => press('next'),
+        restart: () => press('previous'),
+        volumeUp: () => control('volumeBy', VOLUME_STEP),
+        volumeDown: () => control('volumeBy', -VOLUME_STEP),
+        hide: () => {
+            const current = state.get();
+            state.set({ ...current, hidden: !current.hidden });
+        },
     };
 
     const registration = (window as any).SteamClient?.Input?.RegisterForControllerStateChanges?.((changes: any[]) => {
-        const { hotkeys, viewMode } = state.get();
+        const { bindings, hotkeys, viewMode } = state.get();
 
-        if (!hotkeys || viewMode == ViewMode.Closed) {
-            return;
-        }
+        for (const { unControllerIndex, ulButtons, ulUpperButtons } of changes) {
+            const pressed = pressedButtons(ulButtons, ulUpperButtons);
 
-        for (const { ulButtons, ulUpperButtons } of changes) {
-            const grips = pressedGrips(ulButtons, ulUpperButtons);
-            const chord = Object.entries(grips)
-                .filter(([, pressed]) => pressed)
-                .map(([name]) => name)
-                .join('+');
+            detectors[unControllerIndex] ??= chordDetector();
+            const chord = detectors[unControllerIndex](pressed);
 
-            if (chord != held) {
-                held = chord;
-                onChord(chord);
+            if (recording) {
+                record(recording, unControllerIndex, pressed);
+            } else if (chord && hotkeys && viewMode != ViewMode.Closed && viewMode != ViewMode.Remote) {
+                const action = Object.keys(bindings).find(action => bindings[action] == chord);
+                if (action) {
+                    actions[action]?.();
+                }
             }
         }
     });

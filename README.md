@@ -7,16 +7,18 @@ Watch YouTube in a picture-in-picture window while you game on Steam Deck. A [De
 - **TV interface.** Runs YouTube's TV app in Steam's built-in browser, so the layout scales with the window instead of collapsing.
 - **Sign in with a code.** Pair at `yt.be/activate` from your phone. No password on the Deck.
 - **Sharp at any size.** Quality is set by you, not by the window size.
-- **Controls during games.** Playback lives in the Quick Access Menu, plus hotkeys on the back buttons.
+- **Controls during games.** Playback lives in the Quick Access Menu, plus hotkeys you can rebind.
 
 ## Controls
 
-| Hotkey  | Action           |
-| ------- | ---------------- |
-| L4 + R4 | Play / pause     |
-| L4 + L5 | Back 10 seconds  |
-| R4 + R5 | Forward 10 seconds |
-| L5 + R5 | Hide / show window |
+| Default hotkey | Action             |
+| -------------- | ------------------ |
+| L4 + R4        | Play / pause       |
+| L5 + L4        | Back 10 seconds    |
+| R5 + R4        | Forward 10 seconds |
+| L5 + R5        | Hide / show window |
+
+Rebind any of these in the plugin panel: select an action and press your buttons. Next video, restart and volume are available too.
 
 **Browse YouTube** in the plugin panel turns the gamepad into a remote: D-pad to navigate, A select, B back, X play/pause, Y exit.
 

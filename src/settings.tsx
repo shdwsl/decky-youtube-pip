@@ -14,8 +14,11 @@ import { ReactNode, useEffect, useState } from "react";
 import { FaBackward, FaForward, FaPause, FaPlay, FaStepBackward, FaStepForward } from "react-icons/fa";
 
 import { control, getStatus, press, Status } from "./backend";
+import { bindChord, NOT_BOUND } from "./chords";
 import { useGlobalState } from "./globalState";
+import { DEFAULT_BINDINGS, HOTKEY_ACTIONS } from "./hotkeys";
 import { LinkModalWithState } from "./linkModal";
+import { RecordModalWithState } from "./recordModal";
 import { formatTime, Position, REMOTE_ROUTE, ViewMode } from "./util";
 
 const SEEK_SECONDS = 10;
@@ -64,7 +67,7 @@ const NowPlaying = ({ status }: { status: Status }) => {
 }
 
 export const Settings = () => {
-    const [{ viewMode, position, margin, size, quality, hidden, hotkeys }, setGlobalState, stateContext] = useGlobalState();
+    const [{ viewMode, position, margin, size, quality, hidden, hotkeys, bindings }, setGlobalState, stateContext] = useGlobalState();
     const status = useStatus();
 
     const positionOptions = [
@@ -222,13 +225,6 @@ export const Settings = () => {
                     }))} />
             </PanelSectionRow>
             <PanelSectionRow>
-                <ToggleField
-                    label='Back Button Hotkeys'
-                    description='L4+R4 play/pause, L4+L5 back 10s, R4+R5 forward 10s, L5+R5 hide window'
-                    checked={hotkeys}
-                    onChange={hotkeys => setGlobalState(state => ({ ...state, hotkeys }))} />
-            </PanelSectionRow>
-            <PanelSectionRow>
                 <ButtonItem
                     bottomSeparator="none"
                     layout="below"
@@ -239,6 +235,41 @@ export const Settings = () => {
                     Close
                 </ButtonItem>
             </PanelSectionRow>
+        </PanelSection>
+        <PanelSection title="Hotkeys">
+            <PanelSectionRow>
+                <ToggleField
+                    label='Enable Hotkeys'
+                    description='Games also receive these buttons. Press X on a hotkey to clear it.'
+                    checked={hotkeys}
+                    onChange={hotkeys => setGlobalState(state => ({ ...state, hotkeys }))} />
+            </PanelSectionRow>
+            {hotkeys && <>
+                {HOTKEY_ACTIONS.map(({ id, label }) =>
+                    <PanelSectionRow key={id}>
+                        <Focusable
+                            onSecondaryActionDescription='Clear'
+                            onSecondaryButton={() => setGlobalState(state => ({
+                                ...state,
+                                bindings: bindChord(state.bindings, id, NOT_BOUND)
+                            }))}>
+                            <ButtonItem
+                                label={label}
+                                layout="below"
+                                onClick={() => showModal(<RecordModalWithState value={stateContext} action={id} label={label} />)}>
+                                {bindings[id] || 'Not set'}
+                            </ButtonItem>
+                        </Focusable>
+                    </PanelSectionRow>)}
+                <PanelSectionRow>
+                    <ButtonItem
+                        bottomSeparator="none"
+                        layout="below"
+                        onClick={() => setGlobalState(state => ({ ...state, bindings: DEFAULT_BINDINGS }))}>
+                        Reset Hotkeys
+                    </ButtonItem>
+                </PanelSectionRow>
+            </>}
         </PanelSection>
     </>;
 };
