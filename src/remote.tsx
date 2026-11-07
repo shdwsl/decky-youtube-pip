@@ -14,10 +14,12 @@ const DIRECTIONS: { [button: number]: RemoteKey } = {
 
 // Steam keeps gamepad focus here, the TV app receives the buttons as key presses.
 export const Remote = () => {
-    const [, setGlobalState] = useGlobalState();
+    const [{ viewMode }, setGlobalState] = useGlobalState();
 
     useEffect(() => {
-        setGlobalState(state => ({ ...state, viewMode: ViewMode.Remote, hidden: false }));
+        setGlobalState(state => state.viewMode == ViewMode.Closed
+            ? state
+            : { ...state, viewMode: ViewMode.Remote, hidden: false });
 
         return () => setGlobalState(state => ({
             ...state,
@@ -26,6 +28,13 @@ export const Remote = () => {
                 : state.viewMode
         }));
     }, []);
+
+    // This page stays in Steam's history, Back must not bring a closed player back.
+    useEffect(() => {
+        if (viewMode == ViewMode.Closed) {
+            Navigation.NavigateBack();
+        }
+    }, [viewMode]);
 
     const handled = (evt: GamepadEvent, action: () => void) => {
         evt.stopPropagation();

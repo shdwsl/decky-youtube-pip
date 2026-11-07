@@ -143,7 +143,7 @@ export const Settings = () => {
                     onChange={volume => control('volume', volume)} />
             </PanelSectionRow>
             <PanelSectionRow>
-                <ButtonItem layout="below" onClick={() => {
+                <ButtonItem layout="below" disabled={viewMode == ViewMode.Remote} onClick={() => {
                     Navigation.Navigate(REMOTE_ROUTE);
                     Navigation.CloseSideMenus();
                 }}>

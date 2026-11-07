@@ -20,6 +20,7 @@ import {
 } from "./util";
 
 interface BrowserProps {
+    composition: UIComposition
     visible: boolean
     x: number
     y: number
@@ -27,8 +28,8 @@ interface BrowserProps {
     height: number
 }
 
-const Browser = ({ visible, x, y, width, height }: BrowserProps) => {
-    useUIComposition(UIComposition.Notification);
+const Browser = ({ composition, visible, x, y, width, height }: BrowserProps) => {
+    useUIComposition(composition);
 
     const [{ browser, view }] = useState<{ browser: any, view: any }>(() => {
         const root: any = Router.WindowStore?.GamepadUIMainWindowInstance;
@@ -149,7 +150,9 @@ export const Pip = () => {
     const fullscreen = { x: 0, y: 0, width: screen.width, height: screen.height };
 
     if (viewMode == ViewMode.Remote) {
+        // Notification only draws over a game and leaves it the controller.
         return <Browser
+            composition={UIComposition.Opaque}
             visible={visible}
             {...fullscreen}
             height={screen.height - REMOTE_HINT_HEIGHT} />;
@@ -240,6 +243,7 @@ export const Pip = () => {
     }
 
     return <Browser
+        composition={UIComposition.Notification}
         visible={visible && !hidden}
         {...bounds} />;
 }
