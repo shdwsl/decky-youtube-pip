@@ -37,7 +37,7 @@ The frontend opens a Steam browser view with a TV user agent. The Python backend
 
 ## Notes
 
-- Early version.
+- Tested on Steam Deck.
 - Not affiliated with YouTube or Google. Using the TV app from a non-TV device is unofficial and may stop working.
 - Preview image: Big Buck Bunny, (c) Blender Foundation, CC BY 3.0.
 
